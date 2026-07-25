@@ -39,13 +39,12 @@
 ## CPU Utilization Investigation Process Flow
 * **Answer :**
 1. Verify the Alert:
-* Log into the server and run top or htop to confirm real-time CPU usage.
+* Use monitoring tools like CloudWatch, Prometheus, or Grafana to check the CPU utilization.
+* If server is not hung log into the server and run top command to confirm real-time CPU usage.
 * Use uptime to check system load averages.
-* We can use monitoring tools like CloudWatch, Prometheus, or Grafana to verify the alert.
 
 2. Identify the Root Cause:
-* Run `ps -eo pid,ppid,cmd,%cpu --sort=-%cpu | head` to find top CPU-consuming processes.
-* Use `top` and press `Shift + P` to sort by CPU usage.
+* Run `ps -eo pid,ppid,cmd,%cpu --sort=-%cpu | head` to find top CPU-consuming processes or Use `top` and press `Shift + P` to sort by CPU usage.
 * Check that particular process is application related or system related.
 * Sometimes due to more user load or peeks in application usage, CPU usage can spike. And after few minutes it will come down automatically.
 
@@ -60,7 +59,10 @@
 * Restart the process if it’s unresponsive or consuming abnormally high CPU After taking the necessary approvals.
 * If this issue came after application update by application then there might be change of code bug which need to inform to developer/application owner.
 
-5. Historical Analysis:
+5. Reboot Server (if required):
+* If server is hung and application is down then take approval and reboot the server.
+
+6. Historical Analysis:
 * Check historical data from monitoring tools (like CloudWatch, Prometheus, Grafana) to see if this is a recurring issue.
 * If yes like daily or weekly basis, consider scaling the instance size after approval.
 
@@ -87,6 +89,7 @@
 ### Disk Extension Steps - LVM
 1. Increase the disk from AWS
 2. Increase the partition using `growpart <disk>  <partition number>` command
+    EX: `growpart /dev/sda 2` last partition of disk.
 3. Resize the PV using `pvresize <partition>` command
 4. Resize the LV using `lvextend -L +<size> <LV path>` command
 5. Run `xfs_growfs` or `resize2fs` based on the filesystem to reflect the changes
