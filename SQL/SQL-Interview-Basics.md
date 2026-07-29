@@ -36,7 +36,7 @@ A **database** is an organized collection of data stored electronically so it ca
 
 ---
 
-## 2. What is SQL
+## 2. What is SQL ?
 
 **SQL** stands for **Structured Query Language**. It is the standard language used to talk to a relational database — to store, retrieve, update, and delete data.
 
