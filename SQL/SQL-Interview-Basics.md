@@ -607,7 +607,4 @@ HAVING SUM(amount) > 1000;
 - If unsure, say what you *do* know and reason out loud — interviewers value clear thinking.
 - Practice writing 4–5 queries by hand (a SELECT with JOIN, a GROUP BY, an INSERT, an UPDATE with WHERE).
 
-Good luck! 🎯
 ```
-
-> *Note: This is AI-generated study material. Please double-check syntax against your target database (MySQL/PostgreSQL/etc.) as small differences exist between them.*
