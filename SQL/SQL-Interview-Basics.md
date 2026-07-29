@@ -385,21 +385,220 @@ WHERE customer_id IN (
 
 ## 15. Common Interview Questions
 
-Practice answering these out loud:
+---
 
-1. What is the difference between `DELETE`, `TRUNCATE`, and `DROP`?
-2. What is the difference between `WHERE` and `HAVING`?
-3. What are the different types of joins? Explain INNER vs LEFT JOIN.
-4. What is a primary key vs a foreign key?
-5. What is the difference between SQL and NoSQL?
-6. What is normalization? Explain 1NF, 2NF, 3NF.
-7. What is an index and why is it useful?
-8. What is the difference between `UNION` and `UNION ALL`?
-   - `UNION` combines results and removes duplicates; `UNION ALL` keeps duplicates (and is faster).
-9. What is the difference between `CHAR` and `VARCHAR`?
-   - `CHAR` is fixed-length; `VARCHAR` is variable-length.
-10. What order are SQL clauses logically executed in?
-    - `FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT`
+### Q1. What is the difference between `DELETE`, `TRUNCATE`, and `DROP`?
+
+| | DELETE | TRUNCATE | DROP |
+|---|---|---|---|
+| **What it removes** | Specific rows (or all rows if no WHERE) | All rows | Entire table (structure + data) |
+| **Can use WHERE?** | Yes | No | No |
+| **Can rollback?** | Yes (it's DML) | No (it's DDL) | No (it's DDL) |
+| **Speed** | Slower (logs each row) | Faster (logs minimal) | Fastest |
+| **Table still exists?** | Yes | Yes | No |
+
+**Simple answer:** "DELETE removes rows and can be rolled back. TRUNCATE removes all rows fast but cannot be rolled back. DROP removes the entire table permanently."
+
+---
+
+### Q2. What is the difference between `WHERE` and `HAVING`?
+
+- **WHERE** filters rows **before** grouping happens. It works on individual rows.
+- **HAVING** filters **after** `GROUP BY`. It works on groups/aggregates.
+
+**Simple rule:** If you're filtering using `COUNT()`, `SUM()`, `AVG()` etc., use `HAVING`. For everything else, use `WHERE`.
+
+```sql
+-- WHERE: filters individual rows before grouping
+SELECT city, COUNT(*) FROM customers
+WHERE city != 'Delhi'       -- remove Delhi rows first
+GROUP BY city;
+
+-- HAVING: filters the grouped result
+SELECT city, COUNT(*) FROM customers
+GROUP BY city
+HAVING COUNT(*) > 5;        -- only cities with more than 5 customers
+```
+
+**Interview one-liner:** "WHERE filters rows before grouping; HAVING filters groups after GROUP BY."
+
+---
+
+### Q3. What are the different types of JOINs? Explain INNER vs LEFT JOIN.
+
+There are 5 main types:
+
+| Join | What it returns |
+|---|---|
+| INNER JOIN | Only rows that have a match in **both** tables |
+| LEFT JOIN | All rows from the left table + matched rows from right (NULL if no match) |
+| RIGHT JOIN | All rows from the right table + matched rows from left (NULL if no match) |
+| FULL OUTER JOIN | All rows from both tables (NULL where no match on either side) |
+| CROSS JOIN | Every combination of rows from both tables |
+
+**INNER vs LEFT — simple example:**
+
+Suppose you have 3 customers and only 2 of them have placed orders.
+- `INNER JOIN` → returns only those 2 customers (the ones with orders).
+- `LEFT JOIN` → returns all 3 customers; the one with no orders shows NULL in order columns.
+
+**Use LEFT JOIN when:** you want to see all records from the main table even if there's no related data.
+
+**Interview one-liner:** "INNER JOIN returns only matching rows. LEFT JOIN returns all rows from the left table and matching rows from the right, with NULLs where there's no match."
+
+---
+
+### Q4. What is a Primary Key vs a Foreign Key?
+
+**Primary Key:**
+- Uniquely identifies each row in a table.
+- Cannot be NULL.
+- A table can have only one primary key.
+- Example: `customer_id` in the `customers` table.
+
+**Foreign Key:**
+- A column in one table that refers to the Primary Key of another table.
+- It creates a link (relationship) between two tables.
+- Example: `customer_id` in the `orders` table pointing to `customers`.
+
+```sql
+CREATE TABLE orders (
+    order_id    INT PRIMARY KEY,
+    customer_id INT,
+    FOREIGN KEY (customer_id) REFERENCES customers(customer_id)
+);
+```
+
+**Interview one-liner:** "A primary key uniquely identifies a row in its own table. A foreign key is a reference to a primary key in another table, used to create a relationship between them."
+
+---
+
+### Q5. What is the difference between SQL and NoSQL?
+
+| | SQL | NoSQL |
+|---|---|---|
+| Data stored as | Tables (rows & columns) | Documents, key-value pairs, graphs, etc. |
+| Schema | Fixed (must define structure first) | Flexible (each record can be different) |
+| Scaling | Vertical (add more power to one server) | Horizontal (add more servers) |
+| Best for | Structured data, banking, ERP, reporting | Big/fast/unstructured data, social media, IoT |
+| Examples | MySQL, PostgreSQL, Oracle | MongoDB, Redis, Cassandra, DynamoDB |
+
+**Simple analogy:**
+- SQL is like an Excel sheet — strict columns, every row must fit.
+- NoSQL is like a folder of JSON documents — each document can have different fields.
+
+**When to choose SQL:** Data is structured and relationships matter (e.g., bank transactions).
+**When to choose NoSQL:** Data is huge, changes often, or doesn't fit a fixed structure (e.g., user activity logs).
+
+---
+
+### Q6. What is Normalization? Explain 1NF, 2NF, 3NF.
+
+**Normalization** = organizing data into multiple related tables to **remove redundancy** (duplicate data) and ensure **data integrity** (accuracy).
+
+**Simple analogy:** Instead of writing a customer's full name and address in every order row (redundant), store the customer once in a `customers` table and just reference their ID in `orders`.
+
+| Normal Form | Rule |
+|---|---|
+| **1NF** | Each column holds one single (atomic) value. No repeating groups or arrays in a cell. |
+| **2NF** | Meets 1NF + every non-key column depends on the **whole** primary key (no partial dependency). |
+| **3NF** | Meets 2NF + no non-key column depends on another non-key column (no transitive dependency). |
+
+**Example for 1NF violation:** Storing `"Mumbai, Pune"` in a single `city` column — this breaks 1NF because one cell has multiple values.
+
+**Interview one-liner:** "Normalization is the process of structuring a database to minimize redundancy and ensure data consistency, typically achieved through 1NF, 2NF, and 3NF rules."
+
+---
+
+### Q7. What is an Index and why is it useful?
+
+An **index** is a separate data structure the database maintains to speed up lookups on a column.
+
+**Simple analogy:** Like the index at the back of a textbook — instead of reading all 500 pages to find "normalization", you go to the index and jump directly to page 312.
+
+```sql
+CREATE INDEX idx_city ON customers(city);
+-- Now: SELECT * FROM customers WHERE city = 'Mumbai' is much faster
+```
+
+**Pros:**
+- Faster `SELECT` and search queries.
+
+**Cons:**
+- Extra storage space used.
+- `INSERT`, `UPDATE`, `DELETE` become slightly slower because the index must also be updated.
+
+**Interview one-liner:** "An index speeds up data retrieval by allowing the database to find rows without scanning the whole table, at the cost of extra storage and slightly slower writes."
+
+---
+
+### Q8. What is the difference between `UNION` and `UNION ALL`?
+
+Both combine the results of two `SELECT` queries vertically (stack them on top of each other).
+
+| | UNION | UNION ALL |
+|---|---|---|
+| Removes duplicates? | **Yes** | No (keeps all rows) |
+| Speed | Slower (has to compare for duplicates) | **Faster** |
+
+```sql
+-- UNION: combines and removes duplicates
+SELECT city FROM customers
+UNION
+SELECT city FROM suppliers;
+
+-- UNION ALL: combines and keeps duplicates
+SELECT city FROM customers
+UNION ALL
+SELECT city FROM suppliers;
+```
+
+**Rule:** Both queries must have the same number of columns with compatible data types.
+
+**Interview one-liner:** "UNION combines results from two queries and removes duplicates. UNION ALL also combines but keeps all rows including duplicates, making it faster."
+
+---
+
+### Q9. What is the difference between `CHAR` and `VARCHAR`?
+
+Both store text, but they handle length differently:
+
+| | CHAR | VARCHAR |
+|---|---|---|
+| Length | Fixed — always uses the declared size | Variable — uses only as much space as needed |
+| Example | `CHAR(10)` storing "Hi" uses 10 characters (padded with spaces) | `VARCHAR(10)` storing "Hi" uses 2 characters |
+| Best for | Data with consistent length (e.g., country code `IN`, `US`) | Data with varying length (e.g., names, emails) |
+
+**Interview one-liner:** "CHAR is fixed-length and pads unused space; VARCHAR is variable-length and uses only the space needed. Use CHAR for fixed-size data like country codes, VARCHAR for names and emails."
+
+---
+
+### Q10. What order are SQL clauses logically executed in?
+
+Even though you *write* SELECT first, the database *executes* in this order:
+
+```
+1. FROM        — which table(s) to read
+2. WHERE       — filter rows
+3. GROUP BY    — group filtered rows
+4. HAVING      — filter groups
+5. SELECT      — pick columns / calculate
+6. ORDER BY    — sort the result
+7. LIMIT       — cut down to N rows
+```
+
+**Why it matters:** This explains why you cannot use a SELECT alias in a WHERE clause (alias doesn't exist yet at that point), but you can use it in ORDER BY (alias is known by then).
+
+```sql
+-- This will FAIL — alias 'total' does not exist at WHERE stage
+SELECT SUM(amount) AS total FROM orders WHERE total > 1000;  -- ERROR
+
+-- This works — use HAVING for aggregate conditions
+SELECT customer_id, SUM(amount) AS total
+FROM orders
+GROUP BY customer_id
+HAVING SUM(amount) > 1000;
+```
 
 ---
 
